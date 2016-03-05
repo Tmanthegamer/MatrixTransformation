@@ -50,7 +50,7 @@ namespace asgn5v1
 		private System.Windows.Forms.ToolBarButton toolBarButton5;
 		private System.Windows.Forms.ToolBarButton resetbtn;
 		private System.Windows.Forms.ToolBarButton exitbtn;
-		int[,] lines;
+        int[,] lines;
 
 		public Transformer()
 		{
@@ -332,6 +332,10 @@ namespace asgn5v1
 		protected override void OnPaint(PaintEventArgs pea)
 		{
 			Graphics grfx = pea.Graphics;
+            float width = grfx.DpiX;
+            float height = grfx.DpiY;
+           
+
             Pen pen = new Pen(Color.White, 3);
 			double temp;
 			int k;
@@ -366,12 +370,16 @@ namespace asgn5v1
 
         void Init()
         {
-            double scale = Height / 20;
+            Rectangle rect = RectangleToScreen(this.ClientRectangle);
+            int clientHeight = rect.Bottom - rect.Top;
+            int clientWidth = (rect.Right - rect.Left);
+
+            double scale = (clientHeight  / 2) / 20;
 
             double[,] translateBeforeScale = TranslateCoords3D(-10, -10, 0);
             double[,] flipVerticalMatrix = FlipCoords3D(false, true, false);
             double[,] scaleToInitialSize = ScaleCoords3D(scale, scale, 0);
-            double[,] translateAfterScale = TranslateCoords3D(Width / 2, Height / 2, 0);
+            double[,] translateAfterScale = TranslateCoords3D(clientWidth / 2, clientHeight / 2, 0);
 
             double[][,] combo = new double[4][,];
             combo[0] = translateBeforeScale;

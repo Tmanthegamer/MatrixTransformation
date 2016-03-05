@@ -24,3 +24,11 @@ C:\Users\Tyler\Desktop\Assignment 5\asgn5\obj\Debug\asgn5v1.csprojResolveAssembl
 C:\Users\Tyler\Desktop\Assignment 5\asgn5\obj\Debug\asgn5v1.AboutDialogBox.resources
 C:\Users\Tyler\Desktop\Assignment 5\asgn5\obj\Debug\asgn5v1.Transformer.resources
 C:\Users\Tyler\Desktop\Assignment 5\asgn5\obj\Debug\asgn5v1.csproj.GenerateResource.Cache
+C:\Users\Administrator\Desktop\MatrixTransformation\obj\Debug\asgn5v1.exe
+C:\Users\Administrator\Desktop\MatrixTransformation\obj\Debug\asgn5v1.pdb
+C:\Users\Administrator\Desktop\MatrixTransformation\bin\Debug\asgn5v1.exe
+C:\Users\Administrator\Desktop\MatrixTransformation\bin\Debug\asgn5v1.pdb
+C:\Users\Administrator\Desktop\MatrixTransformation\obj\Debug\asgn5v1.csprojResolveAssemblyReference.cache
+C:\Users\Administrator\Desktop\MatrixTransformation\obj\Debug\asgn5v1.AboutDialogBox.resources
+C:\Users\Administrator\Desktop\MatrixTransformation\obj\Debug\asgn5v1.Transformer.resources
+C:\Users\Administrator\Desktop\MatrixTransformation\obj\Debug\asgn5v1.csproj.GenerateResource.Cache

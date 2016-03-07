@@ -376,7 +376,23 @@ namespace asgn5v1
 
             double scale = (clientHeight  / 2) / 20;
 
-            double[,] translateBeforeScale = TranslateCoords3D(-10, -10, 0);
+            double minx = vertices[0, 0];
+            double miny = vertices[0, 1];
+
+            for(int i = 0; i < numpts; i++)
+            {
+                if (vertices[i, 0] < minx)
+                {
+                    minx = vertices[i, 0];
+                }
+                if (vertices[i, 1] < miny)
+                {
+                    miny = vertices[i, 1];
+                }
+            }
+            //vertices[i, k]
+
+            double[,] translateBeforeScale = TranslateCoords3D((-10 - minx), (-10 - miny), 0);
             double[,] flipVerticalMatrix = FlipCoords3D(false, true, false);
             double[,] scaleToInitialSize = ScaleCoords3D(scale, scale, 0);
             double[,] translateAfterScale = TranslateCoords3D(clientWidth / 2, clientHeight / 2, 0);

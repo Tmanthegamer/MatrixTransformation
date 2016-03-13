@@ -9,15 +9,24 @@ using System.Text;
 
 namespace asgn5v1
 {
-	/// <summary>
+    
+    /// <summary>
 	/// Summary description for Transformer.
 	/// </summary>
 	public class Transformer : System.Windows.Forms.Form
 	{
 		private System.ComponentModel.IContainer components;
-		//private bool GetNewData();
+        //private bool GetNewData();
 
-		// basic data for Transformer
+        // basic data for Transformer
+        const int UP = 0;
+        const int DOWN = 1;
+        const int LEFT = 2;
+        const int RIGHT = 3;
+        const int X = 0;
+        const int Y = 1;
+        const int Z = 2;
+
 
 		int numpts = 0;
 		int numlines = 0;
@@ -379,22 +388,9 @@ namespace asgn5v1
             double minx = vertices[0, 0];
             double miny = vertices[0, 1];
 
-            for(int i = 0; i < numpts; i++)
-            {
-                if (vertices[i, 0] < minx)
-                {
-                    minx = vertices[i, 0];
-                }
-                if (vertices[i, 1] < miny)
-                {
-                    miny = vertices[i, 1];
-                }
-            }
-            //vertices[i, k]
-
-            double[,] translateBeforeScale = TranslateCoords3D((-10 - minx), (-10 - miny), 0);
+            double[,] translateBeforeScale = TranslateCoords3D((-1 * minx), (-1 * miny), 0);
             double[,] flipVerticalMatrix = FlipCoords3D(false, true, false);
-            double[,] scaleToInitialSize = ScaleCoords3D(scale, scale, 0);
+            double[,] scaleToInitialSize = ScaleCoords3D(scale, scale, 1);
             double[,] translateAfterScale = TranslateCoords3D(clientWidth / 2, clientHeight / 2, 0);
 
             double[][,] combo = new double[4][,];
@@ -482,7 +478,7 @@ namespace asgn5v1
         {
             double[,] temp = new double[4, 4];
             double cos = Math.Cos(angle);
-            double sin = Math.Sin(angle); 
+            double sin = Math.Sin(angle);
 
             temp[0, 0] = 1;
             temp[1, 1] = 1;
@@ -509,12 +505,75 @@ namespace asgn5v1
             return temp;
         }
 
+        void Scale(int direction)
+        {
+            double[,] matrix = new double[4, 4];
+            double initX = scrnpts[0, 0];
+            double initY = scrnpts[0, 1];
+            double initZ = 1;
+            switch (direction)
+            {
+                case UP:
+                    matrix = ScaleCoords3D(1.1, 1.1, 1.1);
+                    break;
+                case DOWN:
+                    matrix = ScaleCoords3D(0.9, 0.9, 0.9);
+                    break;
+            }
+            double[,] PreTranslate = TranslateCoords3D(-1 * initX, -1 * initY, -1 * initZ);
+            double[,] PostTranslate = TranslateCoords3D(initX, initY, initZ);
+            double[][,] combo = new double[4][,];
+            combo[0] = ctrans;
+            combo[1] = PreTranslate;
+            combo[2] = matrix;
+            combo[3] = PostTranslate;
+            ctrans = TNet(combo);
+        }
+
+        void Rotate(int direction)
+        {
+            double cos = Math.Cos(0.05);
+            double sin = Math.Sin(0.05);
+            double[,] matrix = new double[4, 4];
+
+            matrix[0, 0] = 1;
+            matrix[1, 1] = 1;
+            matrix[2, 2] = 1;
+            matrix[3, 3] = 1;
+
+            switch (direction)
+            {
+                case X:
+                    matrix[0, 0] = cos;
+                    matrix[0, 1] = (-1 * sin);
+                    matrix[1, 0] = sin;
+                    matrix[1, 1] = cos;
+                    break;
+                case Y:
+                    matrix[0, 0] = cos;
+                    matrix[0, 1] = sin;
+                    matrix[1, 0] = (-1 * sin); 
+                    matrix[1, 1] = cos;
+                    break;
+                case Z:
+                    matrix[1, 1] = cos;
+                    matrix[1, 2] = sin;
+                    matrix[2, 1] = (-1 * sin);
+                    matrix[2, 2] = cos;
+                    break;
+            }
+
+            double[][,] combo = new double[2][,];
+            combo[0] = ctrans;
+            combo[1] = matrix;
+            ctrans = TNet(combo);
+        }
+
         void MenuNewDataOnClick(object obj, EventArgs ea)
 		{
 			//MessageBox.Show("New Data item clicked.");
 			gooddata = GetNewData();
 			RestoreInitialImage();
-            Init();			
 		}
 
 		void MenuFileExitOnClick(object obj, EventArgs ea)
@@ -531,6 +590,7 @@ namespace asgn5v1
 		void RestoreInitialImage()
 		{
 			Invalidate();
+            Init();
 		} // end of RestoreInitialImage
 
 		bool GetNewData()
@@ -633,45 +693,78 @@ namespace asgn5v1
 			
 		}
 
+        private void translate(int direction)
+        {
+            double[,] matrix = new double[4, 4];
+            switch (direction)
+            {
+                case UP:
+                    matrix = TranslateCoords3D(0, -35, 0);
+                    break;
+                case DOWN:
+                    matrix = TranslateCoords3D(0, 35, 0);
+                    break;
+                case LEFT:
+                    matrix = TranslateCoords3D(-75, 0, 0);
+                    break;
+                case RIGHT:
+                    matrix = TranslateCoords3D(75, 0, 0);
+                    break;
+            }
+            double[][,] combo = new double[2][,];
+            combo[0] = ctrans;
+            combo[1] = matrix;
+            ctrans = TNet(combo);
+        }
+
 		private void toolBar1_ButtonClick(object sender, System.Windows.Forms.ToolBarButtonClickEventArgs e)
 		{
 			if (e.Button == transleftbtn)
 			{
-				Refresh();
+                translate(LEFT);
+                Refresh();
 			}
 			if (e.Button == transrightbtn) 
 			{
-				Refresh();
+                translate(RIGHT);
+                Refresh();
 			}
 			if (e.Button == transupbtn)
 			{
-				Refresh();
+                translate(UP);
+                Refresh();
 			}
 			
 			if(e.Button == transdownbtn)
 			{
-				Refresh();
+                translate(DOWN);
+                Refresh();
 			}
 			if (e.Button == scaleupbtn) 
 			{
+                Scale(UP);
 				Refresh();
 			}
 			if (e.Button == scaledownbtn) 
 			{
+                Scale(DOWN);
 				Refresh();
 			}
 			if (e.Button == rotxby1btn) 
 			{
-				
+                Rotate(X);
+                Refresh();
 			}
 			if (e.Button == rotyby1btn) 
 			{
-				
-			}
+                Rotate(Y);
+                Refresh();
+            }
 			if (e.Button == rotzby1btn) 
 			{
-				
-			}
+                Rotate(Z);
+                Refresh();
+            }
 
 			if (e.Button == rotxbtn) 
 			{

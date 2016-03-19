@@ -6,16 +6,20 @@ using System.Windows.Forms;
 using System.Data;
 using System.IO;
 using System.Text;
+using System.Threading;
+
+
 
 namespace asgn5v1
 {
-    
+    public delegate void UpdateRotateCallback(int direction);
     /// <summary>
-	/// Summary description for Transformer.
-	/// </summary>
-	public class Transformer : System.Windows.Forms.Form
+    /// Summary description for Transformer.
+    /// </summary>
+    public class Transformer : System.Windows.Forms.Form
 	{
-		private System.ComponentModel.IContainer components;
+
+        private System.ComponentModel.IContainer components;
         //private bool GetNewData();
 
         // basic data for Transformer
@@ -27,15 +31,17 @@ namespace asgn5v1
         const int Y = 1;
         const int Z = 2;
 
+        public volatile bool _rotateX = false;
+        public volatile bool _rotateY = false;
+        public volatile bool _rotateZ = false;
 
-		int numpts = 0;
+        int numpts = 0;
 		int numlines = 0;
-        int screenHeight;
-        int screenWidth;
         bool gooddata = false;		
 		double[,] vertices;
 		double[,] scrnpts;
-		double[,] ctrans = new double[4,4];  //your main transformation matrix
+        Thread temp;
+        double[,] ctrans = new double[4,4];  //your main transformation matrix
 		private System.Windows.Forms.ImageList tbimages;
 		private System.Windows.Forms.ToolBar toolBar1;
 		private System.Windows.Forms.ToolBarButton transleftbtn;
@@ -88,12 +94,40 @@ namespace asgn5v1
 			MenuItem miAbout = new MenuItem("&About",
 				new EventHandler(MenuAboutOnClick));
 			Menu = new MainMenu(new MenuItem[] {miFile, miAbout});
+            Console.WriteLine("main thread: Starting worker thread...");
+
+            temp = new Thread(new ThreadStart(this.DoWork));
+            temp.Start();
         }
 
-		/// <summary>
-		/// Clean up any resources being used.
-		/// </summary>
-		protected override void Dispose( bool disposing )
+        public void DoWork()
+        {
+            while (true)
+            {
+
+                while (_rotateX)
+                {
+                    Invoke(new UpdateRotateCallback(this.UpdateRotate), new object[] {X});
+                    Thread.Sleep(50);
+                }
+                while (_rotateY)
+                {
+                    Invoke(new UpdateRotateCallback(this.UpdateRotate), new object[] { Y });
+                    Thread.Sleep(50);
+                }
+                while (_rotateZ)
+                {
+                    Invoke(new UpdateRotateCallback(this.UpdateRotate), new object[] { Z });
+                    Thread.Sleep(50);
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        protected override void Dispose( bool disposing )
 		{
 			if( disposing )
 			{
@@ -365,6 +399,8 @@ namespace asgn5v1
                     }
                 }
 
+                Console.WriteLine("Origin>>[x:" + scrnpts[0 , 0] + "] [y:" + scrnpts[0, 1] + "]\n");
+
                 //now draw the lines
 
                 for (int i = 0; i < numlines; i++)
@@ -464,10 +500,9 @@ namespace asgn5v1
 
             for (int j = 0; j < 4; j++)
             {
-                Console.WriteLine("j:" + j);
                 for (int k = 0; k < 4; k++)
                 {
-                    Console.WriteLine("k:" + k + " Value:" + temp[j,k]);
+                    Console.WriteLine("[" + j +"," + k + "]:" + temp[j,k]);
                 }
             }
                     return temp;
@@ -530,42 +565,62 @@ namespace asgn5v1
             ctrans = TNet(combo);
         }
 
-        void Rotate(int direction)
+        public void Rotate(int direction)
         {
-            double cos = Math.Cos(0.05);
-            double sin = Math.Sin(0.05);
-            double[,] matrix = new double[4, 4];
+            double initX = 1;
+            double initY = 1;
+            double initZ = 1;
+
+            double cos = Math.Round(Math.Cos(0.05), 15);
+            double sin = Math.Round(Math.Sin(0.05), 15);
+            double[,] PreTranslate, matrix, PostTranslate;
+            double[][,] combo, combo2;
+
+            PreTranslate = PostTranslate = matrix = new double[4, 4];
+            combo = new double[4][,];
+            combo2 = new double[2][,];
 
             matrix[0, 0] = 1;
             matrix[1, 1] = 1;
             matrix[2, 2] = 1;
             matrix[3, 3] = 1;
 
+            initX = (vertices[0, 0] * ctrans[0, 0]) + (vertices[0, 1] * ctrans[1, 0]) + (vertices[0, 2] * ctrans[2, 0]) + (vertices[0, 3] * ctrans[3, 0]);
+            initY = (vertices[0, 0] * ctrans[0, 1]) + (vertices[0, 1] * ctrans[1, 1]) + (vertices[0, 2] * ctrans[2, 1]) + (vertices[0, 3] * ctrans[3, 1]);
+            initZ = (vertices[0, 0] * ctrans[0, 2]) + (vertices[0, 1] * ctrans[1, 2]) + (vertices[0, 2] * ctrans[2, 2]) + (vertices[0, 3] * ctrans[3, 2]);
+
             switch (direction)
             {
                 case X:
-                    matrix[0, 0] = cos;
-                    matrix[0, 1] = (-1 * sin);
-                    matrix[1, 0] = sin;
                     matrix[1, 1] = cos;
+                    matrix[1, 2] = -sin;
+                    matrix[2, 1] = sin;
+                    matrix[2, 2] = cos;
+
+                    double tempx = matrix[1, 1] + matrix[2, 1];
+                    double tempy = matrix[1, 2] + matrix[2, 2];
                     break;
                 case Y:
                     matrix[0, 0] = cos;
-                    matrix[0, 1] = sin;
-                    matrix[1, 0] = (-1 * sin); 
-                    matrix[1, 1] = cos;
+                    matrix[0, 2] = sin;
+                    matrix[2, 0] = -sin; 
+                    matrix[2, 2] = cos;
                     break;
                 case Z:
+                    matrix[0, 0] = cos;
+                    matrix[0, 1] = sin;
+                    matrix[1, 0] = -sin;
                     matrix[1, 1] = cos;
-                    matrix[1, 2] = sin;
-                    matrix[2, 1] = (-1 * sin);
-                    matrix[2, 2] = cos;
                     break;
             }
 
-            double[][,] combo = new double[2][,];
+            PreTranslate = TranslateCoords3D(-initX, -initY, -initZ);
+            PostTranslate = TranslateCoords3D(initX, initY, initZ);
+
             combo[0] = ctrans;
-            combo[1] = matrix;
+            combo[1] = PreTranslate;
+            combo[2] = matrix;
+            combo[3] = PostTranslate;
             ctrans = TNet(combo);
         }
 
@@ -581,7 +636,7 @@ namespace asgn5v1
 			Close();
 		}
 
-		void MenuAboutOnClick(object obj, EventArgs ea)
+        void MenuAboutOnClick(object obj, EventArgs ea)
 		{
 			AboutDialogBox dlg = new AboutDialogBox();
 			dlg.ShowDialog();
@@ -717,6 +772,27 @@ namespace asgn5v1
             ctrans = TNet(combo);
         }
 
+        public void UpdateRotate(int direction)
+        {
+            switch(direction)
+            {
+                case X:
+                    if (!_rotateX)
+                        return;
+                    break;
+                case Y:
+                    if (!_rotateY)
+                        return;
+                    break;
+                case Z:
+                    if (!_rotateZ)
+                        return;
+                    break;
+            }
+            Rotate(direction);
+            Refresh();
+        }
+
 		private void toolBar1_ButtonClick(object sender, System.Windows.Forms.ToolBarButtonClickEventArgs e)
 		{
 			if (e.Button == transleftbtn)
@@ -768,17 +844,22 @@ namespace asgn5v1
 
 			if (e.Button == rotxbtn) 
 			{
-				
-			}
+                _rotateX = !_rotateX;
+                _rotateY = false;
+                _rotateZ = false;
+            }
 			if (e.Button == rotybtn) 
 			{
-				
-			}
-			
+                _rotateX = false;
+                _rotateY = !_rotateY;
+                _rotateZ = false;
+            }
 			if (e.Button == rotzbtn) 
 			{
-				
-			}
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = !_rotateZ;
+            }
 
 			if(e.Button == shearleftbtn)
 			{

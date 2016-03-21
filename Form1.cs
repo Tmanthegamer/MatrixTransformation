@@ -426,7 +426,7 @@ namespace asgn5v1
 
             double[,] translateBeforeScale = TranslateCoords3D((-1 * minx), (-1 * miny), 0);
             double[,] flipVerticalMatrix = FlipCoords3D(false, true, false);
-            double[,] scaleToInitialSize = ScaleCoords3D(scale, scale, 1);
+            double[,] scaleToInitialSize = ScaleCoords3D(scale, scale, scale);
             double[,] translateAfterScale = TranslateCoords3D(clientWidth / 2, clientHeight / 2, 0);
 
             double[][,] combo = new double[4][,];
@@ -622,6 +622,13 @@ namespace asgn5v1
             combo[2] = matrix;
             combo[3] = PostTranslate;
             ctrans = TNet(combo);
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    ctrans[i, j] = Math.Round(ctrans[i, j], 14);
+                }
+            }
         }
 
         void MenuNewDataOnClick(object obj, EventArgs ea)

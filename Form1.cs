@@ -40,7 +40,8 @@ namespace asgn5v1
         bool gooddata = false;		
 		double[,] vertices;
 		double[,] scrnpts;
-        Thread temp;
+        Thread thread;
+        bool alive;
         double[,] ctrans = new double[4,4];  //your main transformation matrix
 		private System.Windows.Forms.ImageList tbimages;
 		private System.Windows.Forms.ToolBar toolBar1;
@@ -95,30 +96,30 @@ namespace asgn5v1
 				new EventHandler(MenuAboutOnClick));
 			Menu = new MainMenu(new MenuItem[] {miFile, miAbout});
             Console.WriteLine("main thread: Starting worker thread...");
-
-            temp = new Thread(new ThreadStart(this.DoWork));
-            temp.Start();
+            alive = true;
+            thread = new Thread(new ThreadStart(DoWork));
+            thread.Start();
         }
 
         public void DoWork()
         {
-            while (true)
+            while (alive)
             {
 
                 while (_rotateX)
                 {
                     Invoke(new UpdateRotateCallback(this.UpdateRotate), new object[] {X});
-                    Thread.Sleep(50);
+                    Thread.Sleep(25);
                 }
                 while (_rotateY)
                 {
                     Invoke(new UpdateRotateCallback(this.UpdateRotate), new object[] { Y });
-                    Thread.Sleep(50);
+                    Thread.Sleep(25);
                 }
                 while (_rotateZ)
                 {
                     Invoke(new UpdateRotateCallback(this.UpdateRotate), new object[] { Z });
-                    Thread.Sleep(50);
+                    Thread.Sleep(25);
                 }
             }
 
@@ -380,7 +381,7 @@ namespace asgn5v1
            
 
             Pen pen = new Pen(Color.White, 3);
-			double temp;
+			double temp1;
 			int k;
 
             if (gooddata)
@@ -392,10 +393,10 @@ namespace asgn5v1
                 {
                     for (int j = 0; j < 4; j++)
                     {
-                        temp = 0.0d;
+                        temp1 = 0.0d;
                         for (k = 0; k < 4; k++)
-                            temp += vertices[i, k] * ctrans[k, j];
-                        scrnpts[i, j] = temp;
+                            temp1 += vertices[i, k] * ctrans[k, j];
+                        scrnpts[i, j] = temp1;
                     }
                 }
 
@@ -483,6 +484,7 @@ namespace asgn5v1
                 calc2 = mats[i + 1];
                 for (int j = 0; j < 4; j++)
                 {
+                    //Console.Write("row:[" + j + "]");
                     for (int k = 0; k < 4; k++)
                     {
                         double a = (calc1[j, 0] * calc2[0, k]);
@@ -492,20 +494,22 @@ namespace asgn5v1
 
                         value = a + b + c + d;
                         temp[j, k] = value;
+                        //Console.Write("{" + k + ":" + value + "}");
                     }
-
+                    //Console.WriteLine("");
                 }
                 calc1 = temp;
+                //Console.WriteLine("\n\n-=-=-=-=-=-=-=-=-=");
             }
 
-            for (int j = 0; j < 4; j++)
+            /*for (int j = 0; j < 4; j++)
             {
                 for (int k = 0; k < 4; k++)
                 {
                     Console.WriteLine("[" + j +"," + k + "]:" + temp[j,k]);
                 }
-            }
-                    return temp;
+            }*/
+            return temp;
         }
 
         //Can be negative or positive coordinates
@@ -573,11 +577,11 @@ namespace asgn5v1
 
             double cos = Math.Round(Math.Cos(0.05), 15);
             double sin = Math.Round(Math.Sin(0.05), 15);
-            double[,] PreTranslate, matrix, PostTranslate;
+            double[,] PreTranslate, matrix, PostTranslate, temp;
             double[][,] combo, combo2;
 
             PreTranslate = PostTranslate = matrix = new double[4, 4];
-            combo = new double[4][,];
+            combo = new double[3][,];
             combo2 = new double[2][,];
 
             matrix[0, 0] = 1;
@@ -617,18 +621,24 @@ namespace asgn5v1
             PreTranslate = TranslateCoords3D(-initX, -initY, -initZ);
             PostTranslate = TranslateCoords3D(initX, initY, initZ);
 
-            combo[0] = ctrans;
-            combo[1] = PreTranslate;
-            combo[2] = matrix;
-            combo[3] = PostTranslate;
-            ctrans = TNet(combo);
-            for (int i = 0; i < 4; i++)
+            //combo[0] = ctrans;
+            combo[0] = PreTranslate;
+            combo[1] = matrix;
+            combo[2] = PostTranslate;
+
+            temp = TNet(combo);
+
+            combo2[0] = ctrans;
+            combo2[1] = temp;
+            ctrans = TNet(combo2);
+
+            /*for (int i = 0; i < 4; i++)
             {
                 for (int j = 0; j < 4; j++)
                 {
                     ctrans[i, j] = Math.Round(ctrans[i, j], 14);
                 }
-            }
+            }*/
         }
 
         void MenuNewDataOnClick(object obj, EventArgs ea)
@@ -640,7 +650,12 @@ namespace asgn5v1
 
 		void MenuFileExitOnClick(object obj, EventArgs ea)
 		{
-			Close();
+            _rotateX = false;
+            _rotateY = false;
+            _rotateZ = false;
+            thread.Abort();
+            alive = false;
+            Close();
 		}
 
         void MenuAboutOnClick(object obj, EventArgs ea)
@@ -755,6 +770,38 @@ namespace asgn5v1
 			
 		}
 
+        private void Shear(int direction)
+        {
+            double[,] matrix = new double[4, 4];
+
+            double initX = (0 * ctrans[0, 0]) + (0 * ctrans[1, 0]) + (0 * ctrans[2, 0]) + (1 * ctrans[3, 0]);
+            double initY = (0 * ctrans[0, 1]) + (0 * ctrans[1, 1]) + (0 * ctrans[2, 1]) + (1 * ctrans[3, 1]);
+            double initZ = (0 * ctrans[0, 2]) + (0 * ctrans[1, 2]) + (0 * ctrans[2, 2]) + (1 * ctrans[3, 2]);
+
+            matrix[0, 0] = 1;
+            matrix[1, 1] = 1;
+            matrix[2, 2] = 1;
+            matrix[3, 3] = 1;
+            
+            switch (direction)
+            {
+                case LEFT:
+                    matrix[1, 0] = 0.1;
+                    break;
+                case RIGHT:
+                    matrix[1, 0] = -0.1;
+                    break;
+            }
+            double[,] PreTranslate = TranslateCoords3D(-initX, -initY, -initZ);
+            double[,] PostTranslate = TranslateCoords3D(initX, initY, initZ);
+            double[][,] combo = new double[4][,];
+            combo[0] = ctrans;
+            combo[1] = PreTranslate;
+            combo[2] = matrix;
+            combo[3] = PostTranslate;
+            ctrans = TNet(combo);
+        }
+
         private void translate(int direction)
         {
             double[,] matrix = new double[4, 4];
@@ -804,47 +851,74 @@ namespace asgn5v1
 		{
 			if (e.Button == transleftbtn)
 			{
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
                 translate(LEFT);
                 Refresh();
 			}
 			if (e.Button == transrightbtn) 
 			{
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
                 translate(RIGHT);
                 Refresh();
 			}
 			if (e.Button == transupbtn)
 			{
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
                 translate(UP);
                 Refresh();
 			}
 			
 			if(e.Button == transdownbtn)
 			{
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
                 translate(DOWN);
                 Refresh();
 			}
 			if (e.Button == scaleupbtn) 
 			{
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
                 Scale(UP);
 				Refresh();
 			}
 			if (e.Button == scaledownbtn) 
 			{
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
                 Scale(DOWN);
 				Refresh();
 			}
 			if (e.Button == rotxby1btn) 
 			{
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
                 Rotate(X);
                 Refresh();
 			}
 			if (e.Button == rotyby1btn) 
 			{
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
                 Rotate(Y);
                 Refresh();
             }
 			if (e.Button == rotzby1btn) 
 			{
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
                 Rotate(Z);
                 Refresh();
             }
@@ -870,12 +944,20 @@ namespace asgn5v1
 
 			if(e.Button == shearleftbtn)
 			{
-				Refresh();
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
+                Shear(LEFT);
+                Refresh();
 			}
 
 			if (e.Button == shearrightbtn) 
 			{
-				Refresh();
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
+                Shear(RIGHT);
+                Refresh();
 			}
 
 			if (e.Button == resetbtn)
@@ -885,7 +967,12 @@ namespace asgn5v1
 
 			if(e.Button == exitbtn) 
 			{
-				Close();
+                thread.Abort();
+                alive = false;
+                _rotateX = false;
+                _rotateY = false;
+                _rotateZ = false;
+                Close();
 			}
 
 		}
